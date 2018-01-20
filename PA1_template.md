@@ -18,7 +18,8 @@ The variables included in this dataset are:
 
 The dataset is stored in a comma-separated-value (CSV) file and there are a total of 17,568 observations in this dataset.
 
-```{r setoptions, echo = TRUE}
+
+```r
 library(knitr)
 opts_chunk$set(echo = TRUE, results = "hide")
 ```
@@ -27,19 +28,22 @@ opts_chunk$set(echo = TRUE, results = "hide")
 
 ### 0.1 Read in the data
 
-```{r}
+
+```r
 library(ggplot2)
 library(plyr)
 library(lattice)
 ```
 
-```{r}
+
+```r
 activity <- read.csv("activity.csv", header = TRUE)
 summary(activity)
 ```
 
 ### 0.2 Process/transform the data
-```{r}
+
+```r
 activity$day <- weekdays(as.Date(activity$date))
 activity$DateTime <- as.POSIXct(activity$date, format = "%Y-%m-%d")
 
@@ -49,20 +53,28 @@ tidy <- activity[!is.na(activity$steps),]
 ## PART 1
 
 ### 1.1 Total number of steps taken per day
-```{r}
+
+```r
 sumTable <- aggregate(activity$steps ~ activity$date, FUN = sum)
 colnames(sumTable) <- c("Date", "Steps")
 ```
 
 ### 1.2 Histogram of total number of steps taken per day
-```{r}
+
+```r
 hist(sumTable$Steps, breaks = 5, col = "orange", xlab = "Steps", main = "Total number of steps per day")
+```
+
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png)
+
+```r
 dev.copy(png, file = '1.2.png')
 dev.off()
 ```
 
 ### 1.3 Mean (10,766) and median (10,765) of the total number of steps taken per day
-```{r}
+
+```r
 as.integer(mean(sumTable$Steps))
 as.integer(median(sumTable$Steps))
 ```
@@ -70,7 +82,8 @@ as.integer(median(sumTable$Steps))
 ## PART 2
 
 ### 2.1 Time series plot of 5-min interval and avg number of steps taken across all days
-```{r}
+
+```r
 tidy <- activity[!is.na(activity$steps),]
 
 intervalTable <- ddply(tidy, .(interval), summarize, Avg = mean(steps))
@@ -78,13 +91,18 @@ intervalTable <- ddply(tidy, .(interval), summarize, Avg = mean(steps))
 i <- ggplot(intervalTable, aes(x = interval, y = Avg), xlab = "Interval", ylab = "Avg number of steps")
 
 i + geom_line() + xlab ("Interval") + ylab ("Avg number of steps") + ggtitle ("Avg number of steps per interval")
+```
 
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png)
+
+```r
 dev.copy(png, file = '2.1.png')
 dev.off()
 ```
 
 ### 2.2 5-min interval that contains max number of steps = 835
-```{r}
+
+```r
 maxSteps <- max(intervalTable$Avg)
 
 intervalTable[intervalTable$Avg == maxSteps, 1]
@@ -93,12 +111,14 @@ intervalTable[intervalTable$Avg == maxSteps, 1]
 ## PART 3
 
 ### 3.1 Total number of missing values = 2,304
-```{r}
+
+```r
 nrow(activity[is.na(activity$steps),])
 ```
 
 ### 3.2 Strategy to fill in all missing values = substituting missing steps with avg interval from the day of the week
-```{r}
+
+```r
 avgTable <- ddply(tidy, .(interval, day), summarize, Avg = mean(steps))
 
 nadata <- activity[is.na(activity$steps),]
@@ -107,7 +127,8 @@ newdata <- merge(nadata, avgTable, by = c("interval", "day"))
 ```
 
 ### 3.3 New dataset equal to original dataset with missing data filled in
-```{r}
+
+```r
 missingdatafill <- newdata[,c(6,4,1,2,5)]
 colnames(missingdatafill) <- c("steps", "date", "interval", "day", "DateTime")
 
@@ -115,7 +136,8 @@ mergeData <- rbind(tidy, missingdatafill)
 ```
 
 ### 3.4 Histogram of total number of steps taken each day with mean (10,821) and median (11,015)
-```{r}
+
+```r
 sumTable2 <- aggregate(mergeData$steps ~ mergeData$date, FUN=sum)
 colnames(sumTable2)<- c("Date", "Steps")
 
@@ -126,7 +148,11 @@ as.integer(median(sumTable2$Steps))
 hist(sumTable2$Steps, breaks=5, xlab="Steps", main = "Total steps per day", col="Red")
 hist(sumTable$Steps, breaks=5, xlab="Steps", main = "Total steps per day", col="Blue", add=T)
 legend("topright", c("Imputed Data", "Non-NA Data"), fill=c("red", "blue") )
+```
 
+![plot of chunk unnamed-chunk-12](figure/unnamed-chunk-12-1.png)
+
+```r
 dev.copy(png, file = '3.4.png')
 dev.off()
 ```
@@ -134,18 +160,24 @@ dev.off()
 ## PART 4
 
 ### 4.1 2-level factor variable of whether date is a "weekday" and "weekend"
-```{r}
+
+```r
 mergeData$DayCategory <- ifelse(mergeData$day %in% c("Saturday", "Sunday"), "Weekend", "Weekday")
 ```
 
 ### 4.2 Panel plot of time series plot of 5-minute interval and avg number of steps taken across all weekdays or weekends
-```{r}
+
+```r
 intervalTable2 <- ddply(mergeData, .(interval, DayCategory), summarize, Avg = mean(steps))
 
 xyplot(Avg~interval|DayCategory, data=intervalTable2, type="l",  layout = c(1,2),
        main="Avg steps per interval on type of day", 
        ylab="Avg number of steps", xlab="Interval")
+```
 
+![plot of chunk unnamed-chunk-14](figure/unnamed-chunk-14-1.png)
+
+```r
 dev.copy(png, file = '4.2.png')
 dev.off()
 ```
